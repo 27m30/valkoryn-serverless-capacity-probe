@@ -1,0 +1,147 @@
+name: Publish SERVERLESS_CAPACITY_PROBE_V1
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type PUBLISH_SERVERLESS_CAPACITY_PROBE_V1
+        required: true
+        type: string
+      publish_github_attestation:
+        description: Publish GitHub artifact attestation (public repos or GitHub Enterprise Cloud private repos)
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: serverless-capacity-probe-v1-publish
+  cancel-in-progress: false
+
+jobs:
+  build-push:
+    if: ${{ inputs.confirmation == 'PUBLISH_SERVERLESS_CAPACITY_PROBE_V1' }}
+    runs-on: ubuntu-24.04
+    outputs:
+      image: ${{ steps.names.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+      digest_ref: ${{ steps.names.outputs.image }}@${{ steps.build.outputs.digest }}
+    steps:
+      - name: Checkout exact source commit
+        uses: actions/checkout@v6
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Resolve immutable names and CUDA base digest
+        id: names
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner="$(printf '%s' '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+          image="ghcr.io/${owner}/valkoryn-serverless-capacity-probe-v1"
+          immutable_tag="v1-git-${GITHUB_SHA}"
+          base_tag="nvidia/cuda:12.8.1-base-ubuntu22.04"
+          base_digest="$(docker buildx imagetools inspect "${base_tag}" --format '{{json .Manifest.Digest}}' | tr -d '"')"
+          test "${base_digest#sha256:}" != "${base_digest}"
+          {
+            echo "image=${image}"
+            echo "immutable_tag=${immutable_tag}"
+            echo "base_tag=${base_tag}"
+            echo "base_digest=${base_digest}"
+            echo "base_ref=${base_tag}@${base_digest}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Log in to GHCR using the workflow token
+        uses: docker/login-action@65b78e6e13532edd9afa3aa52ac7964289d1a9c1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push probe-only image
+        id: build
+        uses: docker/build-push-action@f2a1d5e99d037542a71f64918e516c093c6f3fc4
+        with:
+          context: ./serverless/capacity-probe-v1
+          file: ./serverless/capacity-probe-v1/Dockerfile
+          platforms: linux/amd64
+          push: true
+          pull: true
+          no-cache: true
+          tags: ${{ steps.names.outputs.image }}:${{ steps.names.outputs.immutable_tag }}
+          build-args: |
+            CUDA_BASE_IMAGE=${{ steps.names.outputs.base_ref }}
+          labels: |
+            org.opencontainers.image.created=${{ github.event.repository.updated_at }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.names.outputs.immutable_tag }}
+          provenance: mode=max
+          sbom: true
+
+      - name: Generate GitHub artifact attestation
+        if: ${{ inputs.publish_github_attestation }}
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ steps.names.outputs.image }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Create immutable build and RunPod plan metadata
+        shell: bash
+        env:
+          IMAGE: ${{ steps.names.outputs.image }}
+          IMAGE_TAG: ${{ steps.names.outputs.immutable_tag }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          BASE_IMAGE: ${{ steps.names.outputs.base_tag }}
+          BASE_DIGEST: ${{ steps.names.outputs.base_digest }}
+        run: |
+          set -euo pipefail
+          mkdir -p publish-output
+          jq -n \
+            --arg image "${IMAGE}" \
+            --arg tag "${IMAGE_TAG}" \
+            --arg digest "${IMAGE_DIGEST}" \
+            --arg base_image "${BASE_IMAGE}" \
+            --arg base_digest "${BASE_DIGEST}" \
+            --arg commit "${GITHUB_SHA}" \
+            --arg repository "${GITHUB_REPOSITORY}" \
+            --arg workflow "${GITHUB_WORKFLOW}" \
+            --arg run_id "${GITHUB_RUN_ID}" \
+            --arg run_attempt "${GITHUB_RUN_ATTEMPT}" \
+            '{schema_version:1,probe:"SERVERLESS_CAPACITY_PROBE_V1",image_name:$image,immutable_tag:$tag,image_digest:$digest,image_digest_reference:($image+"@"+$digest),base_image:$base_image,base_image_digest:$base_digest,source_commit:$commit,source_repository:$repository,workflow:$workflow,workflow_run_id:$run_id,workflow_run_attempt:$run_attempt,platform:"linux/amd64",buildkit_provenance:true,sbom:true}' \
+            > publish-output/build-metadata.json
+          jq -n \
+            --arg image_ref "${IMAGE}@${IMAGE_DIGEST}" \
+            '{imageName:$image_ref,name:"valkoryn-capacity-probe-v1",category:"NVIDIA",containerDiskInGb:5,dockerEntrypoint:[],dockerStartCmd:[],env:{},isPublic:false,isServerless:true,ports:[],readme:"Telemetry-only SERVERLESS_CAPACITY_PROBE_V1. No models, media, network volumes, or production execution.",volumeInGb:0,volumeMountPath:"/workspace"}' \
+            > publish-output/runpod-template-create.json
+          cp serverless/capacity-probe-v1/runpod/endpoint-create.template.json publish-output/runpod-endpoint-create.template.json
+          cp serverless/capacity-probe-v1/runpod/one-probe-request.json publish-output/runpod-one-probe-request.json
+          sha256sum publish-output/*.json > publish-output/SHA256SUMS
+
+      - name: Upload digest and deployment-plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: serverless-capacity-probe-v1-${{ github.sha }}
+          path: publish-output/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish immutable digest to the workflow summary
+        shell: bash
+        run: |
+          {
+            echo '## SERVERLESS_CAPACITY_PROBE_V1 image'
+            echo
+            echo '```text'
+            echo '${{ steps.names.outputs.image }}@${{ steps.build.outputs.digest }}'
+            echo '```'
+            echo
+            echo 'No RunPod resource was created by this workflow.'
+          } >> "${GITHUB_STEP_SUMMARY}"

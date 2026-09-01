@@ -1,0 +1,12 @@
+{
+  "input": {
+    "schema_version": 1,
+    "probe": "SERVERLESS_CAPACITY_PROBE_V1",
+    "nonce": "REPLACE_WITH_ONE_UNIQUE_NONCE"
+  },
+  "policy": {
+    "executionTimeout": 30000,
+    "ttl": 300000,
+    "lowPriority": false
+  }
+}

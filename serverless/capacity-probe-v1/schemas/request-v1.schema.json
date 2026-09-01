@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://valkoryn.local/schemas/serverless-capacity-probe-request-v1.json",
+  "title": "SERVERLESS_CAPACITY_PROBE_V1 request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "probe", "nonce"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "probe": {"const": "SERVERLESS_CAPACITY_PROBE_V1"},
+    "nonce": {"type": "string", "minLength": 8, "maxLength": 128}
+  }
+}

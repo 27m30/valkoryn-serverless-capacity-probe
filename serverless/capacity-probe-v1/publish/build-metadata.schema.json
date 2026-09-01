@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SERVERLESS_CAPACITY_PROBE_V1 build metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "probe", "image_name", "immutable_tag", "image_digest", "image_digest_reference", "base_image", "base_image_digest", "source_commit", "source_repository", "workflow", "workflow_run_id", "workflow_run_attempt", "platform", "buildkit_provenance", "sbom"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "probe": {"const": "SERVERLESS_CAPACITY_PROBE_V1"},
+    "image_name": {"type": "string", "pattern": "^ghcr\\.io/[a-z0-9_.-]+/valkoryn-serverless-capacity-probe-v1$"},
+    "immutable_tag": {"type": "string", "pattern": "^v1-git-[a-f0-9]{40}$"},
+    "image_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "image_digest_reference": {"type": "string", "pattern": "^ghcr\\.io/.+@sha256:[a-f0-9]{64}$"},
+    "base_image": {"const": "nvidia/cuda:12.8.1-base-ubuntu22.04"},
+    "base_image_digest": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+    "source_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "source_repository": {"type": "string", "minLength": 3},
+    "workflow": {"const": "Publish SERVERLESS_CAPACITY_PROBE_V1"},
+    "workflow_run_id": {"type": "string", "pattern": "^[0-9]+$"},
+    "workflow_run_attempt": {"type": "string", "pattern": "^[0-9]+$"},
+    "platform": {"const": "linux/amd64"},
+    "buildkit_provenance": {"const": true},
+    "sbom": {"const": true}
+  }
+}

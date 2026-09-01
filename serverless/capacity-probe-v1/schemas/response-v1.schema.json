@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://valkoryn.local/schemas/serverless-capacity-probe-response-v1.json",
+  "title": "SERVERLESS_CAPACITY_PROBE_V1 response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["worker_id", "actual_gpu_model", "cuda", "vram", "cpu", "ram", "hostname", "worker_startup_timestamp", "handler_execution_timestamp", "cold_start_duration_ms"],
+  "properties": {
+    "worker_id": {"type": "string", "minLength": 1},
+    "actual_gpu_model": {"type": ["string", "null"]},
+    "cuda": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available", "container_runtime_version", "driver_supported_version", "driver_version"],
+      "properties": {
+        "available": {"type": "boolean"},
+        "container_runtime_version": {"type": ["string", "null"]},
+        "driver_supported_version": {"type": ["string", "null"]},
+        "driver_version": {"type": ["string", "null"]}
+      }
+    },
+    "vram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_bytes", "free_bytes"],
+      "properties": {
+        "total_bytes": {"type": ["integer", "null"], "minimum": 0},
+        "free_bytes": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "cpu": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["logical_cores", "model"],
+      "properties": {
+        "logical_cores": {"type": ["integer", "null"], "minimum": 1},
+        "model": {"type": ["string", "null"]}
+      }
+    },
+    "ram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_bytes", "available_bytes"],
+      "properties": {
+        "total_bytes": {"type": ["integer", "null"], "minimum": 0},
+        "available_bytes": {"type": ["integer", "null"], "minimum": 0}
+      }
+    },
+    "hostname": {"type": "string", "minLength": 1},
+    "worker_startup_timestamp": {"type": "string", "format": "date-time"},
+    "handler_execution_timestamp": {"type": "string", "format": "date-time"},
+    "cold_start_duration_ms": {"type": ["number", "null"], "minimum": 0}
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "probe": "SERVERLESS_CAPACITY_PROBE_V1",
+  "deployment_enabled": false,
+  "live_submission_enabled": false,
+  "name": "valkoryn-capacity-probe-v1",
+  "endpoint_id": null,
+  "template_id": "REQUIRES_APPROVED_TEMPLATE_ID",
+  "image": "REQUIRES_IMMUTABLE_IMAGE_SHA256_DIGEST",
+  "contains_models": false,
+  "contains_media_runtime": false,
+  "network_volume_ids": [],
+  "region_restrictions": [],
+  "workers_min": 0,
+  "workers_max": 1,
+  "gpu_count": 1,
+  "idle_timeout_seconds": 60,
+  "execution_timeout_ms": 60000,
+  "request_execution_timeout_ms": 30000,
+  "request_ttl_ms": 300000,
+  "asynchronous_operation": "run",
+  "gpu_policy": {
+    "policy_groups": ["ADA_48_PRO", "AMPERE_48"],
+    "approved_gpu_types": [
+      "NVIDIA L40S",
+      "NVIDIA RTX 6000 Ada Generation",
+      "NVIDIA L40",
+      "NVIDIA RTX A6000",
+      "NVIDIA A40"
+    ],
+    "rest_priority_types": [
+      "NVIDIA L40S",
+      "NVIDIA RTX 6000 Ada Generation",
+      "NVIDIA A40"
+    ],
+    "rest_priority_limit_reason": "Current RunPod endpoint guidance supports up to three ordered GPU types. The probe covers the preferred Ada family and an approved Ampere fallback.",
+    "minimum_vram_gb": 48,
+    "minimum_reported_vram_bytes": 47000000000,
+    "reject_unapproved_response": true
+  },
+  "pricing_guard": {
+    "pricing_refreshed_at": "2026-08-31",
+    "pricing_source": "https://docs.runpod.io/serverless/pricing",
+    "highest_flex_rate_usd_per_second": 0.00053,
+    "ampere_48_flex_rate_usd_per_second": 0.00034,
+    "cold_start_allowance_seconds": 300,
+    "handler_allowance_seconds": 30,
+    "idle_allowance_seconds": 60,
+    "maximum_expected_billable_seconds": 390,
+    "maximum_expected_probe_cost_usd": 0.21,
+    "hard_platform_dollar_cap": false
+  },
+  "api": {
+    "management_base_uri": "https://rest.runpod.io/v1",
+    "queue_base_uri": "https://api.runpod.ai/v2",
+    "credential_environment": "RUNPOD_API_KEY"
+  },
+  "template_proposal": {
+    "container_disk_gb": 5,
+    "container_registry_auth_id": null,
+    "docker_start_command": ["python3", "-m", "capacity_probe.entrypoint"],
+    "environment": {}
+  },
+  "rest_v1_create_endpoint_body": {
+    "templateId": "REQUIRES_APPROVED_TEMPLATE_ID",
+    "name": "valkoryn-capacity-probe-v1",
+    "computeType": "GPU",
+    "allowedCudaVersions": ["12.8", "12.9", "13.0"],
+    "gpuTypeIds": [
+      "NVIDIA L40S",
+      "NVIDIA RTX 6000 Ada Generation",
+      "NVIDIA A40"
+    ],
+    "gpuCount": 1,
+    "workersMin": 0,
+    "workersMax": 1,
+    "idleTimeout": 60,
+    "executionTimeoutMs": 60000,
+    "scalerType": "QUEUE_DELAY",
+    "scalerValue": 4,
+    "flashboot": false,
+    "dataCenterIds": [],
+    "networkVolumeIds": []
+  },
+  "request_body": {
+    "input": {
+      "schema_version": 1,
+      "probe": "SERVERLESS_CAPACITY_PROBE_V1",
+      "nonce": "REPLACE_WITH_UNIQUE_NONCE"
+    },
+    "policy": {
+      "executionTimeout": 30000,
+      "ttl": 300000,
+      "lowPriority": false
+    }
+  }
+}

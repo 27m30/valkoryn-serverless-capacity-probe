@@ -1,0 +1,21 @@
+{
+  "templateId": "REQUIRES_APPROVED_TEMPLATE_ID",
+  "name": "valkoryn-capacity-probe-v1",
+  "computeType": "GPU",
+  "allowedCudaVersions": ["12.8", "12.9", "13.0"],
+  "gpuTypeIds": [
+    "NVIDIA L40S",
+    "NVIDIA RTX 6000 Ada Generation",
+    "NVIDIA A40"
+  ],
+  "gpuCount": 1,
+  "workersMin": 0,
+  "workersMax": 1,
+  "idleTimeout": 60,
+  "executionTimeoutMs": 60000,
+  "scalerType": "QUEUE_DELAY",
+  "scalerValue": 4,
+  "flashboot": false,
+  "dataCenterIds": [],
+  "networkVolumeIds": []
+}
